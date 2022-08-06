@@ -1,0 +1,267 @@
+{
+	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+		{
+			"path": "pages/index/index",
+			"style": {
+				"app-plus": {
+					"titleNView": {
+						"searchInput": {
+							"align": "left",
+							"backgroundColor": "#f6f7f8",
+							"borderRadius": "35px",
+							"disabled": true,
+							"placeholder": "点击搜索作品/视频",
+							"placeholderColor": "#959fa0"
+						},
+						"buttons": [
+							{
+								"float": "right",
+								"text": "分类",
+								"fontSize": "14px",
+								"color": "#959fa0",
+								"colorPressed": "black"
+							}
+						]
+					}
+				}
+			}
+		},
+	    {
+            "path" : "pages/cate/cate",
+            "style": {
+				"enablePullDownRefresh": true,
+                "app-plus": {
+                	"titleNView": {
+                		"searchInput": {
+                			"align": "left",
+                			"backgroundColor": "#f6f7f8",
+                			"borderRadius": "35px",
+                			"disabled": true,
+                			"placeholder": "点击搜索作品/视频",
+                			"placeholderColor": "#959fa0"
+                		}
+                	}
+                }
+            }
+        },
+        {
+            "path": "pages/user/user",
+            "style": {
+				"navigationBarTitleText": "",
+                "app-plus": {
+					"titleNView": {
+						"buttons": [
+							{
+								"color":"#333333",
+								"colorPressed":"#333333",
+								"float":"right",
+								"fontSize":"18px",
+								"fontSrc":"/static/iconfont.ttf",
+								"text":"\ue695"
+							},
+							{
+								"color":"#333333",
+								"colorPressed":"#333333",
+								"float":"right",
+								"fontSize":"16px",
+								"fontSrc":"/static/iconfont.ttf",
+								"text":"\ue61a"
+							}
+						]
+					}
+				}
+            }
+            
+        },
+		{
+            "path": "pages/create/create",
+            "style": {
+                "navigationBarTitleText": "作品发布",
+				"app-plus": {
+					"titleNView": {
+						"buttons": [
+							{
+								"color": "#fb7299",
+								"colorPressed": "#fb85a7",
+								"float": "right",
+								"fontSize": "14px",
+								"text": "发布"
+							}
+						]
+					}
+				}
+            }
+            
+        },
+		{
+            "path": "pages/userVideos/userVideos",
+            "style": {
+                "navigationBarTitleText": "我的作品",
+                "enablePullDownRefresh": true
+            }  
+        },
+		{
+            "path": "pages/userFava/userFava",
+            "style": {
+                "navigationBarTitleText": "我的收藏",
+                "enablePullDownRefresh": true
+            }
+        },
+		{
+            "path": "pages/userVideoList/userVideoList",
+            "style": {
+                "navigationBarTitleText": "视频列表",
+                "enablePullDownRefresh": false
+            }
+        },
+		{
+            "path": "pages/login/login",
+            "style": {
+                "navigationBarTitleText": "",
+                "enablePullDownRefresh": false,
+				"app-plus": {
+					"titleNView": false
+				}
+            }  
+        },
+		{
+            "path": "pages/userSpace/userSpace",
+            "style": {                                                                   
+                "navigationBarTitleText": "",
+                "enablePullDownRefresh": false,
+				"app-plus": {
+					"titleNView": {
+						"type": "transparent",
+						"buttons": [
+							{
+								"float": "right",
+								"type": "menu"
+							}
+						]
+					}
+				}
+            }   
+        },
+		{
+            "path": "pages/detailVideo/detailVideo",
+            "style": {
+                "navigationBarTitleText": "",
+                "enablePullDownRefresh": false,
+				"app-plus": {
+					"titleNView": false,
+					"subNVues": [
+						{
+							"id": "top",
+							"path": "./pages/detailVideo/subNuew/video",
+							"style": {
+								"position": "dock",
+								"dock": "top",
+								"width": "100%",
+								"height": "225px"
+							}
+						}
+					]
+				}
+            }
+        },
+		{
+            "path": "pages/userSetting/userSetting",
+            "style": {
+                "navigationBarTitleText": "设置",
+                "enablePullDownRefresh": false
+            }
+        },
+		{
+            "path": "pages/list/list",
+            "style": {
+                "navigationBarTitleText": "列表",
+                "enablePullDownRefresh": true
+            }
+        },
+		{        
+            "path": "pages/userFollow/userFollow",
+            "style": {
+                "navigationBarTitleText": "关注",
+                "enablePullDownRefresh": true
+            }
+        }
+        ,{
+            "path": "pages/userHistory/userHistory",
+            "style":{
+                "navigationBarTitleText": "历史记录",
+                "enablePullDownRefresh": false,
+				"app-plus": {
+					"titleNView": {
+						"buttons": [
+							{
+								"float": "right",
+								"text": "全清",
+								"fontSize": "14px",
+								"color": "#959fa0",
+								"colorPressed": "black"
+							}
+						]
+					}
+				}
+            } 
+        },
+		{
+            "path" : "pages/search/search",
+            "style": {
+            	"app-plus": {
+            		"titleNView": {
+            			"searchInput": {
+            				"align": "left",
+            				"backgroundColor": "#f6f7f8",
+            				"borderRadius": "35px",
+            				"disabled": false,
+            				"placeholder": "搜索作品/视频",
+            				"placeholderColor": "#959fa0"
+            			},
+            			"buttons": [
+            				{
+            					"float": "right",
+            					"text": "搜索",
+            					"fontSize": "14px",
+            					"color": "#959fa0",
+            					"colorPressed": "black"
+            				}
+            			]
+            		}
+            	}
+            } 
+        }
+    ],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "New World",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"borderStyle": "black",
+		"color": "#8F8F94",
+		"selectedColor": "#0A98D5",
+		"fontSize": "14px",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "新世界",
+				"iconPath": "static/tabber/xsj.png",
+				"selectedIconPath": "static/tabber/xsj_hover.png"
+			},
+			{
+				"pagePath": "pages/cate/cate",
+				"text": "分类",
+				"iconPath": "static/tabber/fl.png",
+				"selectedIconPath": "static/tabber/fl_hover.png"
+			},
+			{
+				"pagePath": "pages/user/user",
+				"text": "个人中心",
+				"iconPath": "static/tabber/grzx.png",
+				"selectedIconPath": "static/tabber/grzx_hover.png"
+			}
+		]
+	}
+}

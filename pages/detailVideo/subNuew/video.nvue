@@ -1,0 +1,592 @@
+<template>
+	<view class="bg-dark text-white">
+		<video id="video"
+			   :src="src"
+			   ref="video"
+			   :poster="poster"
+			   :controls="false"
+			   :show-center-play-btn="false"
+			   :show-fullscreen-btn="false"
+			   :show-progress="false"
+			   :enable-progress-gesture="false"
+			   style="width: 750rpx;height: 225px;"
+			   @fullscreenchange="fullscreenchange"
+			   @timeupdate="timepdata"
+			   @play="isplay = true"
+			   @pause="isplay = false"
+		>
+			<!-- 视频蒙版 -->
+			<view class="position-absolute left-0 right-0 top-0 bottom-0" 
+				  @touchstart="touchStart"
+				  @touchmove="touchMove"
+				  @touchend="touchEnd"
+			>
+			</view>
+			<!-- 视频锁定按钮 -->
+			<view class="flex align-center justify-center position-absolute top-0 left-0 bottom-0" 
+				  style="width: 50px;"	
+				  v-if="fullScreenStatus && (showBarStatus || lockScreenStatus)"
+			>
+				<view class="flex align-center justify-center rounded"
+					  style="width: 50px; height: 50px; background-color: rgba(0, 0, 0, 0.4);"
+					  @click="lockScreen"
+				>
+					<text class="iconfont" style="font-size: 15px;" :class="lockScreenStatus ? 'text-main' : 'text-white'">&#xe620;</text>
+				</view>
+			</view>
+			<!-- 视频内提示框 -->
+			<view class="position-absolute flex align-center justify-center" 
+				  :style="videoBox"
+			>
+				<view v-if="showToastStatus" class="rounded p-2" 
+					  style="background-color: rgba(0, 0, 0, 0.4);"
+				>
+					<text class="font text-white" v-if="toast.type === 'progress'">{{ currentTime | formatTime }}/{{ duration | formatTime }}</text>
+					<text class="font text-white" v-if="toast.type === 'msg'">{{ toast.msg }}</text>
+				</view>
+			</view>
+			<!-- 全屏模式 -->
+			<!-- 全屏-顶部控制区域 -->
+			<view v-if="showBarStatus && fullScreenStatus"
+				  class="flex position-absolute top-0 left-0 right-0 align-center justify-between"
+				  style="height: 44px;"
+			>
+				<view class="flex align-center">
+					<view class="flex align-center">
+						<view class="video-btn">
+							<f-icon-btn :icon="'\ue612'" size="15"  @click="fullOrExitScreen"></f-icon-btn>
+						</view> 
+						<view class="flex align-center">
+							<text class="text-white p-2" style="font-size: 10px; line-height: 1;">{{ videoTitle }}</text>
+						</view>
+					</view>
+				</view>
+				<view class="flex align-center">
+					<f-icon-btn :icon="'\ue612'" size="15" @click="fullOrExitScreen"></f-icon-btn>
+				</view>
+			</view>
+			<!-- 全屏-底部控制区域 -->
+			<view v-if="showBarStatus && fullScreenStatus"
+				  class="video-bg-bottom position-absolute bottom-0 left-0 right-0"
+				  style="height: 88px;"
+			>
+				<view style="height: 88px;">
+					<view style="height: 44px; padding-left: 15px; padding-right: 15px;" 
+						  class="felx-1"
+					>
+						<f-slider :currentTime="currentTime"
+								  :duration="duration"
+								  @change="changeSlider"
+								  @update="updateSlider"
+						>
+						</f-slider>
+					</view>
+					<view style="height: 44px;" class="flex align-stretch justify-between">
+						<view class="flex">
+							<f-icon-btn v-if="!isplay" :icon="'\ue63a'" size="15" @click="playOrPause"></f-icon-btn>
+							<f-icon-btn v-else :icon="'\ue605'" size="15" @click="playOrPause"></f-icon-btn>
+							<view class="flex align-center justify-center mr-4"
+								  style="width: 80px;"
+							>
+								<text class="text-white" style="font-size: 10px;">
+									{{ currentTime | formatTime }}/{{ duration | formatTime }}
+								</text>
+							</view>
+							<f-icon-btn :icon="'\ue697'" size="15" @click="fullOrExitScreen"></f-icon-btn>	
+						</view>
+						<view class="flex">
+							<view class="flex align-center" 
+								  style="height: 44px; padding-left: 15px; padding-right: 15px;"
+								  @click="openDrawer('video')"
+							>
+								<text class="text-white" style="font-size: 10px;">选集</text>
+							</view>
+							<view class="flex align-center" 
+							      style="height: 44px; padding-left: 15px; padding-right: 15px;"
+								  @click="openDrawer('quality')"
+							>
+								<text class="text-white" style="font-size: 10px;">{{ quality | formatQualisty }}</text>
+							</view>
+							<view class="flex align-center" 
+								  style="height: 44px; padding-left: 15px; padding-right: 15px;"
+								  @click="openDrawer('speed')"
+							>
+								<text class="text-white" style="font-size: 10px;">{{ rate }}</text>
+							</view>
+						</view>
+					</view>
+				</view>
+			</view>
+			<!-- 弹框 -->
+			<view v-if="fullScreenStatus && showDrawer" 
+				  class="position-absolute right-0 bottom-0 flex flex-column" 
+				  style="background-color: rgba(0,0,0,0.8); top: 0"
+			>
+				<!-- 倍速 -->
+				<view v-if="drawerType === 'speed'" 
+					  class="flex-1 flex flex-column" 
+					  style="width: 100px;"
+				>
+					<view class="flex-1 flex align-center justify-center" 
+						  v-for="(item, index) in rateList" 
+						  :key="index" 
+						  @click="changeRate(item)"
+					>
+						<text :class="item === rate ? 'text-main' : 'text-white'" style="font-size: 10px;">{{ item }}</text>
+					</view>
+				</view>
+				<!-- 选集 -->
+				<view v-else-if="drawerType === 'video'"
+					  class="flex-1 flex flex-column" 
+					  style="width: 300px;"
+				>
+					<scroll-view scroll-y="true" class="flex-1 p-2">
+						<view class="flex rounded border mb-2 p-2"
+							  v-for="(item, index) in videoList"
+							  :key="index"
+							  @click="changeVideo(item, index)"
+						>
+							<text class="text-white" style="font-size: 10px;" :class="videoIndex === index ? 'text-main' : 'text-white'">{{ item.title }}</text>
+						</view>
+					</scroll-view>
+				</view>
+				<!-- 清晰度 -->
+				<view v-else
+					  class="flex-1 flex flex-column" 
+					  style="width: 100px;"
+				>
+					<view class="flex-1 flex align-center justify-center" 
+						  v-for="(item, index) in qualityList" 
+						  :key="index" 
+						  @click="changeQuality(item)"
+					>
+						<text :class="item.value === quality ? 'text-main' : 'text-white'" style="font-size: 10px;">{{ item.name }}</text>
+					</view>
+				</view>
+			</view>
+		</video>
+		<!-- 非全屏模式 -->
+		<!-- 非全屏-顶部控制区域 -->
+		<view v-if="showBarStatus && !fullScreenStatus" 
+			  class="video-top-bg position-fixed top-0 left-0 right-0"
+		>
+			<view :style="'height:' + statusBarHeight + 'px;'"></view>
+			<view class="flex align-center" style="height: 44px;">
+				<view class="video-btn">
+					<f-icon-btn :icon="'\ue612'" @click="back"></f-icon-btn>
+				</view>
+			</view>
+		</view>
+		<!-- 非全屏-底部控制条区域 -->
+		<view v-if="showBarStatus && !fullScreenStatus" 
+			  class="video-bg-bottom position-fixed bottom-0 left-0 right-0"
+		>
+			<view style="height: 44px;" class="flex align-stretch">
+				<f-icon-btn v-if="!isplay" :icon="'\ue63a'" size="22" @click="playOrPause"></f-icon-btn>
+				<f-icon-btn v-else :icon="'\ue605'" size="22" @click="playOrPause"></f-icon-btn>
+				<view class="flex-1">
+					<f-slider :currentTime="currentTime" 
+							  :duration="duration"
+							  @change="changeSlider"
+							  @update="updateSlider"
+					>
+					</f-slider>
+				</view>
+				<view class="flex align-center justify-center"
+					  style="width: 80px;"
+				>
+					<text class="font-sm text-white">
+						{{ currentTime | formatTime }}/{{ duration | formatTime }}
+					</text>
+				</view>
+				<f-icon-btn :icon="'\ue800'" size="22" @click="fullOrExitScreen"></f-icon-btn>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+	import fIconBtn from './components/f-cion-btn.vue';
+	import fSlider from './components/f-slider.vue';
+	
+	let videoCTX = null;
+	let showToastTimer = null;
+	let timer = null;
+	const d = weex.requireModule('dom');		
+	
+	export default {
+		components: {
+			fIconBtn,
+			fSlider
+		},
+		data() {
+			return {
+				src: '',							// 作品链接
+				poster: '',							// 作品封面
+				isplay: false,
+				statusBarHeight: 0,
+				currentTime: 0,
+				duration: 0,
+				windowHeight: 0,
+				windowWidth: 0,
+				fullScreenStatus: false,
+				showToastStatus: false,
+				toast: {
+					type: 'msg',
+					msg: '提示'
+				},
+				showBarStatus: true,
+				oldTouchs: {},
+				oldValue: {},
+				dbCount: 0,
+				touchType: null,
+				platform: 'android',
+				showDrawer: false,
+				drawerType: 'speed',
+				rate: '1.0X',
+				rateList: ['2.0', '1.5', '1.25', '1.0', '0.8', '0.5'],
+				videoIndex: 0,
+				videoList: [],
+				quality: 'HD',
+				lockScreenStatus: false,
+				videoTitle: ''
+			}
+		},
+		computed: {
+			videoBox() {
+				return this.fullScreenStatus ? `width: ${this.windowWidth}px; height: ${this.windowHeight}` : 'width: 750rpx; height: 225px;';
+			},
+			modelStyle() {
+				let top = this.statusBarHeight + 44;
+				return `top: ${top}px; bottom: 44px`;
+			},
+			qualityList() {
+				return this.videoList[this.videoIndex] ? this.videoList[this.videoIndex].list : []
+			}
+		},
+		created() {
+			let res = uni.getSystemInfoSync();
+			
+			this.statusBarHeight = res.statusBarHeight;
+			this.windowHeight = res.windowHeight;
+			this.windowWidth = res.windowWidth;
+			this.platform = res.platform;
+			// 引入iconfont图标库
+			d.addRule('fontFace', {
+				'fontFamily': "iconfont",
+				'src': "url('https://at.alicdn.com/t/font_1419176_mzo8rsjxi4c.ttf')"
+			});
+			// this.videoList = demoList;	// 视频播放列表
+			uni.$on('video', this.handleVideoEvent)
+		},
+		destroyed() {
+			uni.$off('video', this.handleVideoEvent);
+		},
+		mounted() {
+			videoCTX = this.$refs.video
+		},
+		methods: {
+			// 全屏状态监听
+			fullscreenchange(e) {
+				this.fullScreenStatus = e.detail.fullScreen;
+			},
+			timepdata(e) {
+				if(!this.showToastStatus) {
+					this.currentTime = parseInt(e.detail.currentTime);		// 视频当前时间
+				}
+				this.duration = parseInt(e.detail.duration);				// 视频总时长
+			},
+			// 返回
+			back() {
+				uni.navigateBack({
+					delta: 1
+				});
+			},
+			// 视频播放或暂停控制
+			playOrPause() {
+				this.showToast({
+					msg: this.isplay ? '暂停' : '播放'
+				})
+				if(this.isplay) {
+					videoCTX.pause();
+				} else {
+					this.showBar();
+					videoCTX.play();
+				}
+			},
+			// 视频全屏/取消全屏状态
+			fullOrExitScreen() {
+				if(this.fullScreenStatus) {
+					videoCTX.exitFullScreen();				// 退出全屏
+				} else {	
+					videoCTX.requestFullScreen();			// 进入全屏
+				}
+			},
+			// 进度条变化监控
+			changeSlider(e) {
+				videoCTX.seek(e);
+				this.showToastStatus = false;
+				videoCTX.play();
+			},
+			// 进度条拖拽视频时长随动
+			updateSlider(e) {
+				videoCTX.pause();
+				this.showToastStatus = true;
+				this.showToast({
+					type: 'progress',
+					autoClose: false
+				}); 
+				this.currentTime = e;
+				this.showBar();
+			},
+			// 视频提示框
+			showToast(options) {
+				this.toast.type = options.type || 'msg';
+				this.toast.msg = options.msg || '提示';
+				this.showToastStatus = true;
+				
+				if(options.autoClose !== false) {
+					if(showToastTimer) {
+						clearTimeout(showToastTimer)
+					}
+					showToastTimer = setTimeout(() => {
+						this.showToastStatus = false;
+						showToastTimer = null;
+					}, 500);
+				}
+			},
+			// 控制条显示
+			showBar() {
+				this.showBarStatus = true;
+				timer = timer ? clearTimeout(timer) : null;
+				timer = setTimeout(() => {
+					this.hideBar();
+					timer = null;
+				}, 2000);
+			},
+			// 控制条隐藏
+			hideBar() {
+				this.showBarStatus = false;
+			},
+			// 控制条显示或隐藏
+			showOrHideBar() {
+				this.showBarStatus ? this.hideBar() : this.showBar();
+			},
+			touchStart(e) {
+				this.oldTouchs = e.changedTouches[0];
+				this.oldValue = {
+					currentTime: this.currentTime
+				};
+			},
+			touchMove(e) {
+				if(this.lockScreenStatus) return;
+				
+				let newTouchs = e.changedTouches[0];
+				
+				if(!this.touchType) {
+					this.touchType = Math.abs(newTouchs.pageX - this.oldTouchs.pageX) > 20 ? 'currentTime' : null;
+					if(this.touchType === 'currentTime') {
+						videoCTX.pause();
+					}
+					// IOS端全屏状态
+					if(this.fullScreenStatus && this.platform === 'ios') {
+						this.touchType = Math.abs(newTouchs.pageY - this.oldTouchs.pageY) > 20 ? 'currentTime' : null;
+					}
+				} else if(this.touchType === 'currentTime') {
+					let newCurrentTime = (newTouchs.pageX - this.oldTouchs.pageX) / 250 * this.duration * 2 + this.oldValue.currentTime * 1;
+					if(this.fullScreenStatus && this.platform === 'ios') {
+						this.touchType = Math.abs(newTouchs.pageY - this.oldTouchs.pageY) > 20 ? 'currentTime' : null;
+					}
+					
+					this.showToast({
+						type: 'progress',
+						autoClose: false
+					});
+					this.showBarStatus();
+					newCurrentTime = newCurrentTime > this.duration ? this.duration : newCurrentTime;
+					newCurrentTime = newCurrentTime > 0 ? 0 : newCurrentTime;
+					this.currentTime = newCurrentTime;
+				}
+			},
+			touchEnd(e) {
+				if(this.lockScreenStatus) return;
+				if(this.touchType === 'currentTime') {
+					videoCTX.seek(this.currentTime);
+					videoCTX.play();
+				} else {
+					if(this.dbCount === 1 || this.dbCount === 0) {
+						this.dbCount++;
+					}
+					if(this.dbCount > 0) {
+						setTimeout(() => {
+							// 1：手指单击
+							if(this.dbCount === 1) {
+								this.showOrHideBar();
+								this.showDrawer = false;
+							}
+							// 2：手指双击
+							if(this.dbCount === 2) {
+								this.playOrPause();
+							}
+							this.dbCount = 0;
+						}, 300);
+					}
+				}
+				this.currentTime = null;
+				this.showToastStatus = false;
+			},
+			// 全屏状态-弹框
+			openDrawer(type) {
+				this.drawerType = type;
+				this.showDrawer = true;
+			},
+			// 全屏状态-倍速
+			changeRate(item){
+				this.rate = item
+				videoCTX.playbackRate(this.rate)
+				uni.showToast({
+					title: '当前速度修改为：' + this.rate,
+					icon: 'none'
+				});
+				this.showDrawer = false;
+			},
+			// 全屏状态-选集
+			changeVideo(item, index) {
+				this.videoIndex = index;
+				videoCTX.stop();
+				let list = this.videoList[index].list;
+				let videoSelect = list.findIndex(v => v.value === this.quality);		
+				
+				if(videoSelect === -1) {
+					if(list.length > 0) {
+						this.src = list[0].url
+					} else {
+						return uni.showToast({
+							title: '该视频链接不存在哟~',
+							icon: 'none'
+						});
+					}
+				} else {
+					this.src = list[i].url;
+				}
+				
+				uni.showToast({
+					title: '正在切换视频：' + item.title,
+					icon: 'none'
+				});
+				setTimeout(() => {
+					videoCTX.pause();
+					videoCTX.play();
+				}, 500);
+				this.showDrawer = false;
+			},
+			// 全屏状态-清晰度
+			changeQuality(item) {
+				videoCTX.stop();
+				
+				if(!item.url) {
+					return uni.showToast({
+						title: '该视频链接不存在哟~',
+						icon: 'none'
+					});
+				}
+				
+				this.src = item.url;
+				this.quality = item.value;
+				uni.showToast({
+					title: '正在切换清晰度：' + item.name,
+					icon: 'none'
+				});
+				setTimeout(() => {
+					videoCTX.play()
+				}, 500);
+			},
+			// 全屏状态-视频锁定/解除
+			lockScreen() {
+				this.lockScreenStatus = !this.lockScreenStatus;
+				
+				if(this.lockScreenStatus) {
+					this.hideBar();
+				} else {
+					this.showBar();
+				}
+			},
+			handleVideoEvent(e) {
+				switch(e.event) {
+					case 'init':
+						this.videoIndex = e.params.activeIndex;
+						this.videoList = e.params.videos.map(item => {
+							return {
+								index: 0,
+								title: item.title,
+								list: [
+									{
+										name: '480P',
+										value: 'SD',
+										url: item.url
+									}
+								]
+							}
+						});
+						this.poster = e.params.poster;
+						
+						let v = this.videoList[this.videoIndex];
+						
+						if(v) {
+							this.src = v.list[v.index].url;
+						}
+						break;
+					case 'change':
+						videoCTX.pause();
+						this.videoIndex = e.params.activeIndex;
+						
+						let o = this.videoList[this.videoIndex];
+						
+						if(o) {
+							this.src = o.list[o.index].url;
+						}
+						setTimeout(() => {
+							videoCTX.play();
+						}, 200);
+						break;
+				}
+			}
+		},
+		// 过滤器
+		filters: {
+			// 视频时长时间转换
+			formatTime(result) {
+				let h = Math.floor(result / 3600) < 10 ? '0' + Math.floor(result / 3600) : Math.floor(result / 3600);
+				let m = Math.floor(result / 60 % 60) < 10 ? '0' + Math.floor(result / 60 % 60) : Math.floor(result / 60 % 60);
+				let s = Math.floor(result % 60) < 10 ? '0' + Math.floor(result % 60) : Math.floor(result % 60);
+				
+				return result = result > 3600 ? (h + ":" + m + ":" + s) : m + ":" + s;
+			},
+			// 视频清晰度
+			formatQualisty(value) {
+				let arr = {
+					SD: '480P',
+					HD: '720P',
+					FHD: '1080P'
+				};
+				
+				return arr[value];
+			}
+		},
+		// 依赖注入
+		provide() {
+			return {
+				v: this
+			}
+		}
+	}
+</script>
+
+<style>
+	.video-top-bg {
+		background-image: linear-gradient(to top , rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5));
+	}
+	.video-bottom-bg {
+		background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0, 0.5));
+	}
+</style>
